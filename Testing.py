@@ -28,15 +28,25 @@ class CSVWriter():
         else:
             return {"message": "Reached end of source file"}
         
+class Stock():
+    def __init__(self, key):
+        self.key = key
+        self.yesterday_max = 1E6 # Initialize a large number, ensures initial percentage is more or less 0 and avoids division by zero
+        self.todays_max = 0
+        self.updated_today = 0
+        self.percentage = self.todays_max/self.yesterday_max*100
+
 
 def generate_data():
     return 0
 
 def get_filedata(source):
     data = []
+    stocks = []
     with open(source, mode="r") as file:
         reader = csv.DictReader(file, delimiter=';')
         for row in reader:
+            # Add check for the stocks here, if new kod add to 'stocks', otherwise update that stock
             datetime_obj = datetime.strptime(row['Date'], "%Y-%m-%d %H:%M:%S")
             row['twice'] = 2*int(row['Kurs'])
             row['Day'] = datetime_obj.day

@@ -21,7 +21,9 @@ My solution will be implemented using flask
 
 - Run flask application via flask --app Solution.py run or python Solution.py
 
-- To 
+- To advance one line run curl -X POST http://127.0.0.1:5000/update to advance all lines run curl -X POST http://127.0.0.1:5000/updateAll
+
+- View the result at http://127.0.0.1:5000/winners
 
 ## Comments
 

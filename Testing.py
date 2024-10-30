@@ -31,20 +31,22 @@ class CSVWriter():
             return {"message": "Reached end of source file"}, lineWritten
         
 class Stock():
-    def __init__(self, name, latest):
+    def __init__(self, name, latest, last_updated):
         self.name = name
-        self.closing_value = 1E6 # Initialize a large number, ensures initial percent is more or less 0 and avoids division by zero
+        #self.closing_value = 1E6 # Initialize a large number, ensures initial percent is more or less 0 and avoids division by zero
+        self.closing_value = None
         self.latest = latest
-        #self.updated_today = 0
-        self.last_updated = datetime(year=2016, month=12, day=31).date()
-        self.percent = self.latest/self.closing_value*100
+        self.last_updated = last_updated
+        self.percent = 0
 
     def __str__(self): # Simple 'print' function for easy debugging
         return f'Stock: [name: {self.name}, closing_value: {self.closing_value}, latest: {self.latest},\n last_updated: {self.last_updated}, percent: {self.percent:.2f}]'
 
     def calc_percent(self):
-        return round(self.latest/self.closing_value*100-100,2)
-        #return self.latest/self.closing_value*100-100
+        if self.closing_value is None:
+            self.percent = 0
+        else:
+            self.percent = round(self.latest/self.closing_value*100-100,2)
     
     def to_dict(self, *args):
         return {key: getattr(self, key, None) for key in args}
@@ -75,13 +77,24 @@ def get_filedata(source):
                         stock.closing_value = stock.latest
                         stock.last_updated = datetime_obj.date()
                     stock.latest = int(row['Kurs'])
-                    stock.percent = stock.calc_percent()
+                    stock.calc_percent()
                     new_stock = 0
                     print(f"Updated {stock.name} value to {stock.latest}")
+                    break
             if new_stock:
-                stocks.append(Stock(name=row['Kod'], latest=int(row['Kurs'])))
+                stocks.append(Stock(name=row['Kod'], latest=int(row['Kurs']), last_updated=datetime_obj.date()))
             data.append(row)
     return stocks, data
+
+def get_updated_stocks(stocks):
+    stocks_datesorted = sorted(stocks, key=lambda x: x.last_updated, reverse=True)
+    updated_stocks = [stocks_datesorted[0]]
+    for stock in stocks_datesorted[1:]:
+        if stocks_datesorted[0].last_updated == stock.last_updated:
+            updated_stocks.append(stock)
+        else:
+            break # Since stocks are sorted according to date, if one is not updated the remaining stocks will not be either.
+    return updated_stocks
 
 csvwriter = CSVWriter('Data.csv', 'tmpData.csv')
 starting_point = 12 # Use this to advance the starting_point, =12 writes the entries from the first date to tmpData
@@ -111,7 +124,7 @@ def update_data_all():
 @app.route('/winners', methods=['GET'])
 def get_winners():
     stocks, _ = get_filedata('tmpData.csv')
-    sorted_stocks = sorted(stocks, key=lambda x: x.percent, reverse=True)
+    sorted_stocks = sorted(get_updated_stocks(stocks), key=lambda x: x.percent, reverse=True)
     winners = []
     number_of_winners = 3
     for ind, win in enumerate(sorted_stocks[:number_of_winners]):
@@ -121,6 +134,17 @@ def get_winners():
         winners.append(tmp_dict)
     return jsonify({'winners': winners})
 
+"""
+def get_winners(stocks, number_of_winners=5):    
+    sorted_stocks = sorted(get_updated_stocks(stocks), key=lambda x: x.percent, reverse=True)
+    winners = []
+    for ind, win in enumerate(sorted_stocks[:number_of_winners]):
+        tmp_dict = {}
+        tmp_dict['rank'] = ind+1
+        tmp_dict.update(win.to_dict("name", "latest", "percent"))
+        winners.append(tmp_dict)
+    return winners
+"""
 data = []
 with open("Data.csv", mode="r") as file:
     reader = csv.DictReader(file, delimiter=';')
@@ -133,6 +157,46 @@ with open("Data.csv", mode="r") as file:
 @app.route('/data', methods=['GET'])
 def get_data():
     return jsonify(data)
+
+"""
+def get_winners():
+    stocks, _ = get_filedata('tmpData.csv')
+    sorted_stocks = sorted(stocks, key=lambda x: x.percent, reverse=True)
+    winners = []
+    number_of_winners = 3
+    for ind, win in enumerate(sorted_stocks[:number_of_winners]):
+        tmp_dict = {}
+        tmp_dict['rank'] = ind+1
+        tmp_dict.update(win.to_dict("name", "latest", "percent"))
+        winners.append(tmp_dict)
+    return jsonify({'winners': winners})
+"""
+"""
+@app.route('/fullData', methods=['GET'])
+def get_data():
+    _, data = get_filedata('Data.csv')
+    return jsonify(data)
+"""
+"""
+    stocks, _ = get_filedata('Data.csv')
+    sorted_stocks = sorted(get_updated_stocks(stocks), key=lambda x: x.percent, reverse=True)
+    winners = []
+    number_of_winners = 3
+    for ind, win in enumerate(sorted_stocks[:number_of_winners]):
+        tmp_dict = {}
+        tmp_dict['rank'] = ind+1
+        tmp_dict.update(win.to_dict("name", "latest", "percent"))
+        winners.append(tmp_dict)
+    return jsonify({'winners': winners})
+"""
+
+"""
+if name=="orig":
+    message, _ = csvwriter.writeLine()
+elif name=="ext":
+    message, _ = csvwriterExtended.writeLine()
+return jsonify(message), 200
+"""
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -33,7 +33,7 @@ My solution is implemented using flask
 
 ## How to run
 
-- Install packages from requirements.txt (Only flask and its dependencies are required)
+- Install packages from `requirements.txt` (Only flask and its dependencies are required)
   - The notebook requires IPython (not included in requirements.txt)
 
 - Run flask application via `flask --app Solution.py run` or `python Solution.py`
@@ -62,6 +62,8 @@ testData
 tmpData
 tmpExtendedData
 ```
+
+E.g. `http://127.0.0.1:5000/winners/extendedData` shows the winners for the data in extendedData.csv
 
 `http://127.0.0.1:5000/winners` is equal to `http://127.0.0.1:5000/winners/Data`
 
